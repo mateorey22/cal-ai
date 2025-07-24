@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --font-sans: 'Inter', sans-serif;
+            --color-primary: #22c55e; /* Green */
+            --color-primary-translucent: rgba(34, 197, 94, 0.1);
+            --color-secondary: #3b82f6; /* Blue */
+            --background-dark: #0c0a09;
+            --background-glass-dark: rgba(28, 25, 23, 0.25);
+            --text-primary-dark: #f5f5f4;
+            --text-secondary-dark: #a8a29e;
+            --text-tertiary-dark: #78716c;
+            --border-dark: rgba(245, 245, 244, 0.2);
+            --border-subtle-dark: rgba(245, 245, 244, 0.1);
+            --background-light: #f8fafc;
+            --background-glass-light: rgba(255, 255, 255, 0.4);
+            --text-primary-light: #1c1917;
+            --text-secondary-light: #57534e;
+            --text-tertiary-light: #a8a29e;
+            --border-light: rgba(28, 25, 23, 0.1);
+            --border-subtle-light: rgba(28, 25, 23, 0.05);
+        }
+
+        .dark {
+            --color-background: var(--background-dark);
+            --color-background-glass: var(--background-glass-dark);
+            --color-text-primary: var(--text-primary-dark);
+            --color-text-secondary: var(--text-secondary-dark);
+            --color-text-tertiary: var(--text-tertiary-dark);
+            --color-border: var(--border-dark);
+            --color-border-subtle: var(--border-subtle-dark);
+        }
+
+        .light {
+            --color-background: var(--background-light);
+            --color-background-glass: var(--background-glass-light);
+            --color-text-primary: var(--text-primary-light);
+            --color-text-secondary: var(--text-secondary-light);
+            --color-text-tertiary: var(--text-tertiary-light);
+            --color-border: var(--border-light);
+            --color-border-subtle: var(--border-subtle-light);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            background-color: var(--color-background);
+            font-family: var(--font-sans);
+            margin: 0;
+            overscroll-behavior: none;
+        }
+        
+        .app-container { max-width: 480px; margin: auto; height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; color: var(--color-text-primary); }
+        .glass-bg-container { position: absolute; inset: 0; background-image: radial-gradient(circle at 10% 20%, var(--color-primary-translucent), transparent 50%), radial-gradient(circle at 80% 90%, rgba(59, 130, 246, 0.1), transparent 50%); z-index: -1; transition: opacity 0.5s ease; }
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 1.5rem 1rem 7rem 1rem; }
+        .main-content::-webkit-scrollbar { width: 0; background: transparent; }
+
+        .screen { display: none; animation: fadeIn 0.5s ease; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; filter: blur(4px); } to { opacity: 1; filter: blur(0px); } }
+
+        .screen-title { font-size: 2.25rem; font-weight: 800; margin-bottom: 1.5rem; color: var(--color-text-primary); }
+        .section-title { font-weight: 600; margin-bottom: 0.75rem; color: var(--color-text-secondary); }
+
+        .glass-card { background-color: var(--color-background-glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--color-border); border-radius: 1.25rem; transition: background-color 0.3s, border 0.3s; padding: 1rem; }
+        .input, .select { background-color: var(--color-background-glass); border: 1px solid var(--color-border); border-radius: 1rem; padding: 0.85rem 1rem; width: 100%; color: var(--color-text-primary); transition: all 0.2s ease; font-size: 1rem; font-family: var(--font-sans); }
+        .input:focus, .select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-translucent); }
+        .select { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a8a29e' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
+        .btn { padding: 0.75rem 1.25rem; border-radius: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s ease; border: none; font-family: var(--font-sans); }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background-color: var(--color-primary); color: white; }
+        .btn-secondary { background-color: var(--color-border); color: var(--color-text-primary); }
+        .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; border-radius: 0.75rem; }
+        
+        /* --- Dashboard Screen --- */
+        .dashboard-header { text-align: center; margin-bottom: 2rem; }
+        .calorie-progress { position: relative; width: 200px; height: 200px; margin: auto; }
+        .progress-circle-bg, .progress-circle-fg { fill: none; stroke-width: 16; }
+        .progress-circle-bg { stroke: var(--color-border); }
+        .progress-circle-fg { stroke: var(--color-primary); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 0.5s ease; }
+        .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .progress-text .calories { font-size: 2.75rem; font-weight: 800; line-height: 1; }
+        .progress-text .label { font-size: 0.875rem; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        .macros-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center; margin-top: 2rem; }
+        .macro-item .value { font-weight: 600; font-size: 1.125rem; }
+        .macro-item .label { font-size: 0.875rem; color: var(--color-text-secondary); }
+
+        /* --- Meal Logging --- */
+        .meal-log-list { display: flex; flex-direction: column; gap: 1rem; }
+        .meal-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem; }
+        .meal-item-icon { width: 48px; height: 48px; flex-shrink: 0; background-color: var(--color-border-subtle); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; }
+        .meal-item-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 0.75rem; }
+        .meal-item-details { flex-grow: 1; }
+        .meal-item-name { font-weight: 600; }
+        .meal-item-macros { font-size: 0.875rem; color: var(--color-text-secondary); display: flex; gap: 0.75rem; }
+        .meal-item-calories { font-weight: 600; font-size: 1.125rem; }
+        
+        /* --- Add Meal Screen --- */
+        .add-meal-container { display: flex; flex-direction: column; gap: 1.5rem; text-align: center; }
+        #meal-image-preview { max-width: 100%; max-height: 200px; border-radius: 1rem; margin-bottom: 1rem; }
+        .or-divider { display: flex; align-items: center; text-align: center; color: var(--color-text-tertiary); margin: 1rem 0; }
+        .or-divider::before, .or-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--color-border); }
+        .or-divider:not(:empty)::before { margin-right: .5em; }
+        .or-divider:not(:empty)::after { margin-left: .5em; }
+        
+        /* --- Progress Screen --- */
+        .chart-container { height: 18rem; margin-top: 2rem; }
+
+        /* --- Settings Screen --- */
+        .settings-section { margin-bottom: 2rem; }
+        .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; }
+        .profile-form .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        
+        /* --- Bottom Nav --- */
+        .bottom-nav { position: absolute; left: 1rem; right: 1rem; bottom: 1rem; height: 4.5rem; padding: .75rem; background-color: var(--color-background-glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--color-border); display: flex; border-radius: 1.25rem; justify-content: space-around; z-index: 10; }
+        .nav-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; color: var(--color-text-tertiary); background: none; border: none; cursor: pointer; padding: 0.5rem; border-radius: 0.5rem; transition: all 0.2s ease; width: 70px; flex-grow: 1; }
+        .nav-item.active { color: var(--color-primary); }
+        .nav-label { font-size: 0.75rem; font-weight: 600; }
+        .active-indicator { position: absolute; bottom: -10px; height: 4px; width: 24px; background-color: var(--color-primary); border-radius: 2px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* --- Modals & Overlays --- */
+        .modal-backdrop, .loading-overlay, .error-banner-container { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(10px); opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+        .modal-backdrop.visible, .loading-overlay.visible, .error-banner-container.visible { opacity: 1; visibility: visible; }
+        .modal-content { max-width: 400px; width: 90%; text-align: center; }
+        .error-banner-container { align-items: flex-end; padding: 1rem; padding-bottom: 6.5rem; background: none; backdrop-filter: none; pointer-events: none; }
+        .error-banner-container.visible { pointer-events: auto; }
+        .error-banner { width: 100%; max-width: 464px; margin: auto; background-color: #be123c; color: white; padding: 0.75rem 1rem; border-radius: 1.25rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4); transform: translateY(20px); transition: transform 0.3s; }
+        .error-banner-container.visible .error-banner { transform: translateY(0); }
+        .loading-overlay { z-index: 200; backdrop-filter: blur(4px); }
+        .loading-content { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2rem; border-radius: 1.5rem; }
+        .loading-content .icon-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        /* --- Camera Modal --- */
+        #camera-modal { z-index: 110; }
+        .camera-container { position: relative; width: 100%; max-width: 480px; aspect-ratio: 3/4; background-color: #000; border-radius: 1.25rem; overflow: hidden; }
+        #camera-feed { width: 100%; height: 100%; object-fit: cover; }
+        #capture-btn { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); width: 64px; height: 64px; border-radius: 50%; background-color: white; border: 4px solid rgba(255,255,255,0.5); }
+        #close-camera-btn { position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; padding: 0.5rem; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="app-container">
+        <div class="glass-bg-container"></div>
+        <main class="main-content">
+            <!-- Dashboard Screen -->
+            <div id="screen-dashboard" class="screen active">
+                <div class="dashboard-header">
+                    <p class="text-lg text-text-secondary" id="dashboard-greeting">Bonjour, Matéo</p>
+                    <h1 class="screen-title" style="margin-bottom: 0.5rem;">Votre Journée</h1>
+                </div>
+                
+                <div class="calorie-progress">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="progress-circle-bg" cx="50" cy="50" r="42"></circle>
+                        <circle id="calorie-progress-fg" class="progress-circle-fg" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264"></circle>
+                    </svg>
+                    <div class="progress-text">
+                        <span id="calories-consumed" class="calories">0</span>
+                        <div class="label">/ <span id="calories-goal">2000</span> kcal</div>
+                    </div>
+                </div>
+
+                <div class="macros-grid glass-card" style="margin-top: 2rem;">
+                    <div class="macro-item">
+                        <p id="carbs-consumed" class="value">0g</p>
+                        <p class="label">Glucides</p>
+                    </div>
+                    <div class="macro-item">
+                        <p id="protein-consumed" class="value">0g</p>
+                        <p class="label">Protéines</p>
+                    </div>
+                    <div class="macro-item">
+                        <p id="fat-consumed" class="value">0g</p>
+                        <p class="label">Lipides</p>
+                    </div>
+                </div>
+
+                <div id="tip-of-the-day-card" class="glass-card" style="margin-top: 2rem; display: flex; align-items: center; gap: 1rem;">
+                    <i data-lucide="lightbulb" style="color: var(--color-secondary); flex-shrink: 0;"></i>
+                    <p id="tip-of-the-day-text" style="margin: 0; font-size: 0.9rem; color: var(--color-text-secondary);"></p>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 class="section-title">Repas du jour</h2>
+                        <button id="daily-coach-btn" class="btn btn-secondary btn-sm">
+                            <i data-lucide="sparkles" style="width:14px; height:14px;"></i> Coach du Jour
+                        </button>
+                    </div>
+                    <div id="meal-log-list" class="meal-log-list">
+                        <p id="empty-log-message" class="text-text-tertiary" style="text-align: center; padding: 2rem 0;">Ajoutez votre premier repas !</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Meal Screen -->
+            <div id="screen-add-meal" class="screen">
+                <h1 class="screen-title">Ajouter un Repas</h1>
+                <div class="add-meal-container">
+                    <button id="open-camera-btn" class="btn btn-primary" style="width: 100%;">
+                        <i data-lucide="camera"></i> Scanner avec l'appareil photo
+                    </button>
+                    <p class="text-text-secondary" style="font-size: 0.9rem; margin-top: 1rem;">Ou importez une image :</p>
+                    
+                    <label for="meal-image-input" class="btn btn-secondary" style="width: 100%;">
+                        <i data-lucide="upload-cloud"></i> Importer depuis un fichier
+                    </label>
+                    <input type="file" id="meal-image-input" accept="image/*" style="display: none;">
+
+                    <img id="meal-image-preview" src="" style="display: none; max-width: 100%; border-radius: 1rem; margin-top: 1rem;" alt="Aperçu du repas">
+                    <button id="analyze-btn" class="btn btn-secondary" style="width: 100%;" disabled>
+                        <i data-lucide="zap"></i> Analyser le Repas
+                    </button>
+
+                    <div class="or-divider">ou</div>
+                    
+                    <h2 class="section-title" style="text-align: left; margin-bottom: 1rem;">Ajout Manuel</h2>
+                    <form id="manual-add-form" style="text-align: left; display: flex; flex-direction: column; gap: 1rem;">
+                        <input type="text" id="manual-name" class="input" placeholder="Nom du plat (ex: Salade de poulet)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <input type="number" id="manual-calories" class="input" placeholder="Calories">
+                            <input type="number" id="manual-protein" class="input" placeholder="Protéines (g)">
+                            <input type="number" id="manual-carbs" class="input" placeholder="Glucides (g)">
+                            <input type="number" id="manual-fat" class="input" placeholder="Lipides (g)">
+                        </div>
+                        <button type="submit" class="btn btn-secondary" style="width: 100%;">Ajouter manuellement</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress Screen -->
+            <div id="screen-progress" class="screen">
+                <h1 class="screen-title">Vos Progrès</h1>
+                <div class="glass-card">
+                    <h2 class="section-title">Évolution du poids (kg)</h2>
+                    <div class="chart-container">
+                        <canvas id="weight-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Screen -->
+            <div id="screen-settings" class="screen">
+                <h1 class="screen-title">Paramètres</h1>
+                
+                <div class="settings-section">
+                    <h2 class="section-title">Profil & Objectifs</h2>
+                    <form id="profile-form" class="glass-card profile-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="age">Âge</label>
+                                <input id="age" type="number" class="input" value="18">
+                            </div>
+                            <div class="form-group">
+                                <label for="gender">Sexe</label>
+                                <select id="gender" class="select">
+                                    <option value="male">Homme</option>
+                                    <option value="female">Femme</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="height">Taille (cm)</label>
+                                <input id="height" type="number" class="input" placeholder="ex: 180">
+                            </div>
+                            <div class="form-group">
+                                <label for="weight">Poids (kg)</label>
+                                <input id="weight" type="number" class="input" placeholder="ex: 75">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 1rem;">
+                             <label for="target-weight">Objectif Poids (kg)</label>
+                             <input id="target-weight" type="number" class="input" placeholder="ex: 72">
+                        </div>
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="activity-level">Niveau d'activité</label>
+                            <select id="activity-level" class="select">
+                                <option value="1.2">Sédentaire (peu ou pas d'exercice)</option>
+                                <option value="1.375">Léger (1-3 jours/semaine)</option>
+                                <option value="1.55" selected>Modéré (3-5 jours/semaine)</option>
+                                <option value="1.725">Actif (6-7 jours/semaine)</option>
+                                <option value="1.9">Très actif (travail physique)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">
+                            <i data-lucide="save"></i> Mettre à jour le profil
+                        </button>
+                    </form>
+                </div>
+
+                <div class="settings-section">
+                    <h2 class="section-title">Configuration</h2>
+                    <div class="glass-card" style="padding: 1rem;">
+                        <div class="settings-item" style="padding: 0;">
+                            <span>Thème</span>
+                            <button id="theme-toggle-btn" class="btn btn-secondary">
+                                <i data-lucide="sun" style="width:16px; height:16px;"></i>
+                                <span id="theme-toggle-text">Passer en Clair</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                   <h2 class="section-title">Configuration API</h2>
+                   <form id="api-key-form" class="glass-card" style="display:flex; flex-direction:column; padding:1rem; gap:0.75rem;">
+                       <label for="apiKeyInput" style="font-weight:600; color:var(--color-text-secondary); display:flex; align-items:center; gap:0.5rem;">
+                           <i data-lucide="key-round" style="width:16px; height:16px;"></i> Clé API Gemini
+                       </label>
+                       <p style="font-size:0.875rem; color:var(--color-text-tertiary); margin-bottom:0.5rem; margin-top:0;">Votre clé est stockée uniquement dans votre navigateur.</p>
+                       <input id="apiKeyInput" type="password" class="input" placeholder="Entrez votre clé API Google AI">
+                       <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.75rem;">
+                           <span id="save-key-btn-text"><i data-lucide="save" style="width:16px; height:16px; vertical-align: middle; margin-right: 0.5rem;"></i>Sauvegarder</span>
+                       </button>
+                   </form>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-screen="dashboard"><i data-lucide="layout-dashboard"></i><span class="nav-label">Tableau</span></button>
+            <button class="nav-item" data-screen="add-meal"><i data-lucide="plus-circle"></i><span class="nav-label">Ajouter</span></button>
+            <button class="nav-item" data-screen="progress"><i data-lucide="trending-up"></i><span class="nav-label">Progrès</span></button>
+            <button class="nav-item" data-screen="settings"><i data-lucide="settings"></i><span class="nav-label">Paramètres</span></button>
+            <div class="active-indicator"></div>
+        </nav>
+    </div>
+
+    <!-- Modals and Overlays -->
+    <div id="camera-modal" class="modal-backdrop">
+        <div class="camera-container">
+            <video id="camera-feed" playsinline></video>
+            <button id="capture-btn"></button>
+            <button id="close-camera-btn"><i data-lucide="x"></i></button>
+        </div>
+    </div>
+    <canvas id="camera-canvas" style="display:none;"></canvas>
+
+    <div id="coach-modal" class="modal-backdrop">
+        <div class="modal-content glass-card" style="padding: 1.5rem; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                 <h2 style="font-size:1.25rem; font-weight:bold; margin:0; color: var(--color-primary);">Coach du Jour</h2>
+                 <button id="close-coach-modal-btn" style="background:none; border:none; color: var(--color-text-primary); cursor:pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <div id="coach-modal-content"></div>
+        </div>
+    </div>
+
+    <div id="api-key-modal" class="modal-backdrop">
+        <div class="modal-content glass-card" style="padding: 1.5rem;">
+            <i data-lucide="key-round" style="margin:auto; display:block; color:var(--color-primary); margin-bottom:1rem; width:40px; height:40px;"></i>
+            <h2 style="font-size:1.25rem; font-weight:bold; margin-bottom:0.5rem;">Clé API Gemini Requise</h2>
+            <p style="color:var(--color-text-secondary); margin-bottom:1rem;">Pour utiliser les fonctions IA, veuillez entrer votre clé API Google AI.</p>
+            <form id="modal-api-key-form" style="display:flex; flex-direction:column; gap:0.75rem;">
+                <input id="modal-api-key-input" type="password" placeholder="Entrez votre clé API ici" class="input" style="text-align:center;" autofocus>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" disabled>Sauvegarder et continuer</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content glass-card">
+            <i data-lucide="loader-2" class="icon-spin" style="width:32px; height:32px; color:var(--color-primary);"></i>
+            <p id="loading-message">L'IA analyse votre plat...</p>
+        </div>
+    </div>
+    
+    <div id="error-banner-container" class="error-banner-container">
+        <div class="error-banner">
+            <i data-lucide="alert-circle" style="width:20px; height:20px; flex-shrink: 0;"></i>
+            <p id="error-message" style="flex-grow:1; margin:0;"></p>
+            <button id="error-close-btn" class="btn-icon" style="padding:0; background:none; border:none; color:white; cursor:pointer;"><i data-lucide="x" style="width:20px; height:20px;"></i></button>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const app = {
+            state: {
+                profile: {
+                    age: 18,
+                    gender: 'male',
+                    height: 180,
+                    weight: 75,
+                    targetWeight: 72,
+                    activityLevel: 1.55,
+                    tdee: 0,
+                },
+                weightLog: [], // { date, weight }
+                meals: [], // { id, name, calories, protein, carbs, fat, image, date }
+                activeScreen: 'dashboard',
+                theme: 'dark',
+                apiKey: null,
+                error: null,
+                loadingMessage: '',
+                weightChart: null,
+                cameraStream: null,
+            },
+
+            healthTips: [
+                "Buvez au moins 1,5 à 2 litres d'eau par jour pour rester bien hydraté.",
+                "Essayez de manger cinq portions de fruits et légumes chaque jour.",
+                "Le poisson gras comme le saumon ou le maquereau est riche en oméga-3, bon pour le cœur.",
+                "Privilégiez les céréales complètes (pain complet, pâtes complètes, riz brun) pour plus de fibres.",
+                "Une poignée de noix ou d'amandes est un excellent en-cas, sain et rassasiant.",
+                "Limitez votre consommation de boissons sucrées et de sodas.",
+                "L'activité physique régulière est aussi importante que l'alimentation. Visez 30 minutes par jour.",
+                "Un bon sommeil (7-9 heures par nuit) est crucial pour la régulation du poids et de l'appétit.",
+                "Mangez lentement et mâchez bien vos aliments pour une meilleure digestion et satiété.",
+                "Ne sautez pas de repas, surtout le petit-déjeuner, pour éviter les fringales plus tard."
+            ],
+
+            elements: {
+                root: document.documentElement,
+                screens: document.querySelectorAll('.screen'),
+                navItems: document.querySelectorAll('.nav-item'),
+                activeNavIndicator: document.querySelector('.active-indicator'),
+                
+                // Dashboard
+                caloriesConsumed: document.getElementById('calories-consumed'),
+                caloriesGoal: document.getElementById('calories-goal'),
+                calorieProgressFg: document.getElementById('calorie-progress-fg'),
+                carbsConsumed: document.getElementById('carbs-consumed'),
+                proteinConsumed: document.getElementById('protein-consumed'),
+                fatConsumed: document.getElementById('fat-consumed'),
+                mealLogList: document.getElementById('meal-log-list'),
+                emptyLogMessage: document.getElementById('empty-log-message'),
+                tipOfDayText: document.getElementById('tip-of-the-day-text'),
+                dailyCoachBtn: document.getElementById('daily-coach-btn'),
+
+                // Add Meal
+                openCameraBtn: document.getElementById('open-camera-btn'),
+                mealImageInput: document.getElementById('meal-image-input'),
+                mealImagePreview: document.getElementById('meal-image-preview'),
+                analyzeBtn: document.getElementById('analyze-btn'),
+                manualAddForm: document.getElementById('manual-add-form'),
+
+                // Progress
+                weightChartCanvas: document.getElementById('weight-chart'),
+
+                // Settings
+                profileForm: document.getElementById('profile-form'),
+                ageInput: document.getElementById('age'),
+                genderInput: document.getElementById('gender'),
+                heightInput: document.getElementById('height'),
+                weightInput: document.getElementById('weight'),
+                targetWeightInput: document.getElementById('target-weight'),
+                activityLevelInput: document.getElementById('activity-level'),
+                themeToggleBtn: document.getElementById('theme-toggle-btn'),
+                apiKeyForm: document.getElementById('api-key-form'),
+                apiKeyInput: document.getElementById('apiKeyInput'),
+                saveKeyBtnText: document.getElementById('save-key-btn-text'),
+                
+                // Modals & Overlays
+                cameraModal: document.getElementById('camera-modal'),
+                cameraFeed: document.getElementById('camera-feed'),
+                cameraCanvas: document.getElementById('camera-canvas'),
+                captureBtn: document.getElementById('capture-btn'),
+                closeCameraBtn: document.getElementById('close-camera-btn'),
+                coachModal: document.getElementById('coach-modal'),
+                coachModalContent: document.getElementById('coach-modal-content'),
+                closeCoachModalBtn: document.getElementById('close-coach-modal-btn'),
+                apiKeyModal: document.getElementById('api-key-modal'),
+                modalApiKeyForm: document.getElementById('modal-api-key-form'),
+                modalApiKeyInput: document.getElementById('modal-api-key-input'),
+                loadingOverlay: document.getElementById('loading-overlay'),
+                loadingMessage: document.getElementById('loading-message'),
+                errorBanner: document.getElementById('error-banner-container'),
+                errorMessage: document.getElementById('error-message'),
+                errorCloseBtn: document.getElementById('error-close-btn'),
+            },
+
+            init() {
+                this.loadState();
+                this.attachEventListeners();
+                this.calculateTDEE();
+                this.render();
+                if (!this.state.apiKey) {
+                    this.showApiKeyModal(true);
+                }
+            },
+            
+            setState(newState) {
+                const oldTheme = this.state.theme;
+                const oldWeight = this.state.profile.weight;
+                
+                if (newState.profile) {
+                    newState.profile = {...this.state.profile, ...newState.profile};
+                }
+
+                Object.assign(this.state, newState);
+                
+                if (newState.theme && newState.theme !== oldTheme) {
+                    this.renderTheme();
+                }
+
+                if (newState.profile) {
+                    this.calculateTDEE();
+                    if (newState.profile.weight !== oldWeight) {
+                        this.logWeight(newState.profile.weight);
+                    }
+                }
+
+                this.render();
+                this.saveState();
+            },
+            
+            loadState() {
+                try {
+                    this.state.theme = localStorage.getItem('nutriscan-theme') || 'dark';
+                    this.state.apiKey = localStorage.getItem('nutriscan-apikey');
+                    const profile = localStorage.getItem('nutriscan-profile');
+                    if (profile) this.state.profile = JSON.parse(profile);
+                    const meals = localStorage.getItem('nutriscan-meals');
+                    if (meals) this.state.meals = JSON.parse(meals);
+                    const weightLog = localStorage.getItem('nutriscan-weightLog');
+                    if (weightLog) this.state.weightLog = JSON.parse(weightLog);
+
+                    if (this.state.weightLog.length === 0 && this.state.profile.weight) {
+                        this.logWeight(this.state.profile.weight);
+                    }
+
+                } catch (e) {
+                    console.error("Failed to load state", e);
+                    this.showError("Impossible de charger vos données.");
+                }
+            },
+
+            saveState() {
+                try {
+                    localStorage.setItem('nutriscan-theme', this.state.theme);
+                    if (this.state.apiKey) localStorage.setItem('nutriscan-apikey', this.state.apiKey);
+                    localStorage.setItem('nutriscan-profile', JSON.stringify(this.state.profile));
+                    localStorage.setItem('nutriscan-meals', JSON.stringify(this.state.meals));
+                    localStorage.setItem('nutriscan-weightLog', JSON.stringify(this.state.weightLog));
+                } catch (e) {
+                    console.error("Failed to save state", e);
+                    this.showError("Impossible de sauvegarder vos données.");
+                }
+            },
+
+            attachEventListeners() {
+                const { elements } = this;
+                elements.navItems.forEach(item => item.addEventListener('click', () => {
+                    this.setState({ activeScreen: item.dataset.screen });
+                }));
+
+                elements.profileForm.addEventListener('submit', e => {
+                    e.preventDefault();
+                    this.handleProfileUpdate();
+                });
+                
+                elements.themeToggleBtn.addEventListener('click', () => {
+                    this.setState({ theme: this.state.theme === 'dark' ? 'light' : 'dark' });
+                });
+
+                elements.apiKeyForm.addEventListener('submit', e => {
+                    e.preventDefault();
+                    this.handleApiKeySave(elements.apiKeyInput.value);
+                });
+
+                elements.modalApiKeyForm.addEventListener('submit', e => {
+                    e.preventDefault();
+                    const key = elements.modalApiKeyInput.value.trim();
+                    if (key) {
+                        this.handleApiKeySave(key);
+                        this.showApiKeyModal(false);
+                    }
+                });
+                
+                elements.modalApiKeyInput.addEventListener('input', e => {
+                   elements.modalApiKeyForm.querySelector('button').disabled = !e.target.value.trim();
+                });
+
+                elements.errorCloseBtn.addEventListener('click', () => this.showError(null));
+
+                elements.openCameraBtn.addEventListener('click', () => this.startCamera());
+                elements.closeCameraBtn.addEventListener('click', () => this.stopCamera());
+                elements.captureBtn.addEventListener('click', () => this.capturePhoto());
+
+                elements.mealImageInput.addEventListener('change', e => this.handleImagePreview(e));
+                elements.analyzeBtn.addEventListener('click', () => this.handleAnalyzeMeal());
+                elements.manualAddForm.addEventListener('submit', e => {
+                    e.preventDefault();
+                    this.handleManualAdd();
+                });
+
+                elements.dailyCoachBtn.addEventListener('click', () => this.handleDailyCoach());
+                elements.closeCoachModalBtn.addEventListener('click', () => this.showCoachModal(false));
+            },
+
+            calculateTDEE() {
+                const { age, gender, height, weight, activityLevel } = this.state.profile;
+                if (!age || !height || !weight) {
+                    this.state.profile.tdee = 2000;
+                    return;
+                }
+                let bmr = (gender === 'male')
+                    ? (10 * weight) + (6.25 * height) - (5 * age) + 5
+                    : (10 * weight) + (6.25 * height) - (5 * age) - 161;
+                this.state.profile.tdee = Math.round(bmr * activityLevel);
+            },
+
+            logWeight(weight) {
+                const today = new Date().toISOString().split('T')[0];
+                const newLog = [...this.state.weightLog];
+                const todayEntryIndex = newLog.findIndex(entry => entry.date === today);
+                if (todayEntryIndex > -1) {
+                    newLog[todayEntryIndex].weight = weight;
+                } else {
+                    newLog.push({ date: today, weight: weight });
+                }
+                this.state.weightLog = newLog.slice(-90);
+            },
+
+            handleProfileUpdate() {
+                const { elements } = this;
+                const profile = {
+                    age: parseInt(elements.ageInput.value),
+                    gender: elements.genderInput.value,
+                    height: parseInt(elements.heightInput.value),
+                    weight: parseFloat(elements.weightInput.value),
+                    targetWeight: parseFloat(elements.targetWeightInput.value),
+                    activityLevel: parseFloat(elements.activityLevelInput.value)
+                };
+                this.setState({ profile });
+                
+                const btn = elements.profileForm.querySelector('button');
+                btn.innerHTML = `<i data-lucide="check"></i> Profil mis à jour !`;
+                lucide.createIcons();
+                setTimeout(() => {
+                    btn.innerHTML = `<i data-lucide="save"></i> Mettre à jour le profil`;
+                    lucide.createIcons();
+                }, 2000);
+            },
+
+            handleImagePreview(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = e => {
+                    this.elements.mealImagePreview.src = e.target.result;
+                    this.elements.mealImagePreview.style.display = 'block';
+                    this.elements.analyzeBtn.disabled = false;
+                }
+                reader.readAsDataURL(file);
+            },
+
+            async handleAnalyzeMeal(imageData) {
+                if (!this.aiService) return;
+                
+                let base64Data;
+                if (imageData) {
+                    base64Data = imageData.split(',')[1];
+                } else {
+                    const imageSrc = this.elements.mealImagePreview.src;
+                    if (!imageSrc) {
+                        this.showError("Veuillez d'abord sélectionner une image.");
+                        return;
+                    }
+                    base64Data = imageSrc.split(',')[1];
+                }
+
+                const mealData = await this.aiService.analyzeMealImage(base64Data);
+
+                if (mealData && mealData.name && mealData.calories) {
+                    this.addMeal({ ...mealData, image: imageData || this.elements.mealImagePreview.src });
+                    this.setState({ activeScreen: 'dashboard' });
+                    this.elements.mealImagePreview.style.display = 'none';
+                    this.elements.analyzeBtn.disabled = true;
+                    this.elements.mealImageInput.value = '';
+                } else {
+                    this.showError("L'IA n'a pas pu analyser le plat. Essayez l'ajout manuel.");
+                }
+            },
+
+            handleManualAdd() {
+                const name = document.getElementById('manual-name').value.trim();
+                const calories = parseInt(document.getElementById('manual-calories').value);
+                const protein = parseInt(document.getElementById('manual-protein').value) || 0;
+                const carbs = parseInt(document.getElementById('manual-carbs').value) || 0;
+                const fat = parseInt(document.getElementById('manual-fat').value) || 0;
+
+                if (!name || !calories) {
+                    this.showError("Le nom et les calories sont requis.");
+                    return;
+                }
+
+                this.addMeal({ name, calories, protein, carbs, fat });
+                this.setState({ activeScreen: 'dashboard' });
+                document.getElementById('manual-add-form').reset();
+            },
+
+            addMeal(mealData) {
+                const newMeal = {
+                    id: `meal-${Date.now()}`,
+                    date: new Date().toISOString(),
+                    ...mealData
+                };
+                const meals = [...this.state.meals, newMeal];
+                this.setState({ meals });
+            },
+
+            async handleDailyCoach() {
+                if (!this.aiService) return;
+                const { meals, profile } = this.state;
+                const todaysMeals = meals.filter(m => new Date(m.date).toDateString() === new Date().toDateString());
+                if (todaysMeals.length === 0) {
+                    this.showError("Ajoutez des repas pour obtenir un bilan.");
+                    return;
+                }
+                const summary = {
+                    profile: { age: profile.age, weight: profile.weight, goal: profile.tdee, targetWeight: profile.targetWeight },
+                    today: {
+                        calories: todaysMeals.reduce((sum, m) => sum + m.calories, 0),
+                        protein: todaysMeals.reduce((sum, m) => sum + m.protein, 0),
+                        carbs: todaysMeals.reduce((sum, m) => sum + m.carbs, 0),
+                        fat: todaysMeals.reduce((sum, m) => sum + m.fat, 0),
+                        meals: todaysMeals.map(m => m.name)
+                    }
+                };
+                const coachResponse = await this.aiService.getDailyCoach(JSON.stringify(summary));
+
+                if (coachResponse && coachResponse.title && coachResponse.summary && coachResponse.tip) {
+                    this.elements.coachModalContent.innerHTML = `
+                        <h3 style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">${coachResponse.title}</h3>
+                        <p style="color: var(--color-text-secondary); margin-bottom: 1rem;">${coachResponse.summary}</p>
+                        <div style="background-color: var(--color-primary-translucent); padding: 0.75rem; border-radius: 0.75rem; display: flex; align-items: center; gap: 0.75rem;">
+                            <i data-lucide="award" style="color: var(--color-primary); flex-shrink: 0;"></i>
+                            <p style="margin:0; font-weight: 600;">${coachResponse.tip}</p>
+                        </div>
+                    `;
+                    lucide.createIcons({ nodes: [this.elements.coachModalContent] });
+                    this.showCoachModal(true);
+                } else {
+                    this.showError("Impossible de générer le bilan du coach.");
+                }
+            },
+
+            handleApiKeySave(key) {
+                this.setState({ apiKey: key });
+                this.elements.apiKeyInput.value = key;
+                this.elements.saveKeyBtnText.innerHTML = `<i data-lucide="check"></i> Enregistré!`;
+                lucide.createIcons();
+                setTimeout(() => { this.elements.saveKeyBtnText.innerHTML = `<i data-lucide="save"></i> Sauvegarder`; lucide.createIcons(); }, 2000);
+            },
+
+            async startCamera() {
+                if (this.state.cameraStream) {
+                    this.state.cameraStream.getTracks().forEach(track => track.stop());
+                }
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    this.state.cameraStream = stream;
+                    this.elements.cameraFeed.srcObject = stream;
+                    this.elements.cameraFeed.play();
+                    this.elements.cameraModal.classList.add('visible');
+                    lucide.createIcons({nodes: [this.elements.closeCameraBtn]});
+                } catch (err) {
+                    console.error("Camera error:", err);
+                    this.showError("Impossible d'accéder à la caméra. Vérifiez les autorisations.");
+                }
+            },
+            
+            stopCamera() {
+                if (this.state.cameraStream) {
+                    this.state.cameraStream.getTracks().forEach(track => track.stop());
+                }
+                this.state.cameraStream = null;
+                this.elements.cameraModal.classList.remove('visible');
+            },
+
+            capturePhoto() {
+                const { cameraFeed, cameraCanvas } = this.elements;
+                const context = cameraCanvas.getContext('2d');
+                cameraCanvas.width = cameraFeed.videoWidth;
+                cameraCanvas.height = cameraFeed.videoHeight;
+                context.drawImage(cameraFeed, 0, 0, cameraCanvas.width, cameraCanvas.height);
+                
+                const imageData = cameraCanvas.toDataURL('image/jpeg');
+                this.stopCamera();
+                this.handleAnalyzeMeal(imageData);
+            },
+
+            aiService: {
+                async run(prompt, isJson = true, imageData = null) {
+                    if (!app.state.apiKey) { app.showError("Clé API non configurée."); return null; }
+                    app.showLoading(true, "L'IA réfléchit...");
+                    try {
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${app.state.apiKey}`;
+                        const parts = [{ text: prompt }];
+                        if (imageData) {
+                            parts.push({ inline_data: { mime_type: "image/jpeg", data: imageData } });
+                        }
+                        const payload = { contents: [{ parts }], generationConfig: isJson ? { responseMimeType: "application/json" } : {} };
+                        const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        if (!response.ok) { const errBody = await response.json(); throw new Error(errBody.error?.message || 'Erreur IA'); }
+                        const data = await response.json();
+                        const text = data.candidates[0].content.parts[0].text;
+                        return isJson ? JSON.parse(text.replace(/```json\n?|```/g, '')) : text;
+                    } catch (err) {
+                        app.showError(`Erreur IA: ${err.message}`);
+                        return null;
+                    } finally {
+                        app.showLoading(false);
+                    }
+                },
+                analyzeMealImage: (base64Data) => app.aiService.run(
+                    `Vous êtes un expert en nutrition. Analysez la nourriture sur cette image. Fournissez votre meilleure estimation pour le nom du repas, le total des calories, les protéines (en grammes), les glucides (en grammes) et les lipides (en grammes). Répondez UNIQUEMENT avec un objet JSON valide au format : {"name": "string", "calories": number, "protein": number, "carbs": number, "fat": number}.`,
+                    true,
+                    base64Data
+                ),
+                getDailyCoach: (summary) => app.aiService.run(
+                    `Vous êtes un coach en nutrition encourageant. Matéo, un étudiant de 18 ans en Suisse, a fourni les données suivantes : ${summary}. Rédigez un bilan de sa journée. Soyez positif. Répondez UNIQUEMENT avec un objet JSON valide au format : {"title": "string", "summary": "string", "tip": "string"}. Le titre est un encouragement (ex: "Excellent travail !"), le résumé est un bilan de 1-2 phrases, et le conseil est un conseil actionnable pour demain.`,
+                    true
+                ),
+            },
+
+            render() {
+                const { elements, state } = this;
+                elements.screens.forEach(s => s.classList.remove('active'));
+                const activeScreenEl = document.getElementById(`screen-${state.activeScreen}`);
+                if (activeScreenEl) activeScreenEl.classList.add('active');
+
+                const activeNavItem = document.querySelector(`.nav-item[data-screen="${state.activeScreen}"]`);
+                if (activeNavItem) {
+                    elements.navItems.forEach(item => item.classList.remove('active'));
+                    activeNavItem.classList.add('active');
+                    const indicator = elements.activeNavIndicator;
+                    const navItemRect = activeNavItem.getBoundingClientRect();
+                    const navRect = activeNavItem.parentElement.getBoundingClientRect();
+                    indicator.style.transform = `translateX(${navItemRect.left - navRect.left + (navItemRect.width / 2) - (indicator.offsetWidth / 2)}px)`;
+                }
+                
+                if (state.activeScreen === 'dashboard') this.renderDashboard();
+                else if (state.activeScreen === 'progress') this.renderProgress();
+                else if (state.activeScreen === 'settings') this.renderSettings();
+                
+                lucide.createIcons();
+            },
+
+            renderDashboard() {
+                const { profile, meals } = this.state;
+                const todaysMeals = meals.filter(m => new Date(m.date).toDateString() === new Date().toDateString());
+                const totalCalories = todaysMeals.reduce((sum, m) => sum + (m.calories || 0), 0);
+                const totalProtein = todaysMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+                const totalCarbs = todaysMeals.reduce((sum, m) => sum + (m.carbs || 0), 0);
+                const totalFat = todaysMeals.reduce((sum, m) => sum + (m.fat || 0), 0);
+                
+                this.elements.caloriesGoal.textContent = profile.tdee;
+                this.elements.caloriesConsumed.textContent = totalCalories;
+                this.elements.proteinConsumed.textContent = `${totalProtein}g`;
+                this.elements.carbsConsumed.textContent = `${totalCarbs}g`;
+                this.elements.fatConsumed.textContent = `${totalFat}g`;
+
+                const progress = profile.tdee > 0 ? Math.min(1, totalCalories / profile.tdee) : 0;
+                this.elements.calorieProgressFg.style.strokeDashoffset = 264 * (1 - progress);
+
+                if (todaysMeals.length > 0) {
+                    this.elements.emptyLogMessage.style.display = 'none';
+                    this.elements.mealLogList.innerHTML = todaysMeals.map(meal => this.renderMealItem(meal)).join('');
+                } else {
+                    this.elements.emptyLogMessage.style.display = 'block';
+                    this.elements.mealLogList.innerHTML = '';
+                }
+
+                if (!this.elements.tipOfDayText.textContent) {
+                    const randomIndex = Math.floor(Math.random() * this.healthTips.length);
+                    this.elements.tipOfDayText.textContent = this.healthTips[randomIndex];
+                }
+            },
+
+            renderMealItem(meal) {
+                const iconContent = meal.image 
+                    ? `<img src="${meal.image}" alt="${meal.name}">`
+                    : `<i data-lucide="utensils-crossed" style="width: 24px; height: 24px; color: var(--color-text-tertiary);"></i>`;
+                return `
+                    <div class="meal-item glass-card" data-id="${meal.id}">
+                        <div class="meal-item-icon">${iconContent}</div>
+                        <div class="meal-item-details">
+                            <p class="meal-item-name">${meal.name}</p>
+                            <div class="meal-item-macros">
+                                <span>P: ${meal.protein || 0}g</span>
+                                <span>G: ${meal.carbs || 0}g</span>
+                                <span>L: ${meal.fat || 0}g</span>
+                            </div>
+                        </div>
+                        <p class="meal-item-calories">${meal.calories || 0} <span style="font-size:0.8rem; color: var(--color-text-secondary);">kcal</span></p>
+                    </div>
+                `;
+            },
+
+            renderProgress() {
+                if (this.state.weightChart) this.state.weightChart.destroy();
+                
+                const textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-tertiary').trim();
+                const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--color-border-subtle').trim();
+                
+                const { weightLog, profile } = this.state;
+                const labels = weightLog.map(entry => new Date(entry.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
+                const data = weightLog.map(entry => entry.weight);
+                const targetWeightData = weightLog.map(() => profile.targetWeight);
+
+                this.state.weightChart = new Chart(this.elements.weightChartCanvas, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: 'Poids',
+                                data,
+                                borderColor: 'var(--color-primary)',
+                                backgroundColor: 'var(--color-primary-translucent)',
+                                fill: true,
+                                tension: 0.3,
+                                pointBackgroundColor: 'var(--color-primary)',
+                                pointBorderColor: 'var(--color-primary)',
+                            },
+                            {
+                                label: 'Objectif',
+                                data: targetWeightData,
+                                borderColor: 'var(--color-secondary)',
+                                borderDash: [5, 5],
+                                fill: false,
+                                pointRadius: 0,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { 
+                            legend: { 
+                                display: true,
+                                labels: { 
+                                    color: textColor 
+                                } 
+                            } 
+                        },
+                        scales: {
+                            y: { 
+                                grid: { color: gridColor }, 
+                                ticks: { color: textColor } 
+                            },
+                            x: { 
+                                grid: { display: false }, 
+                                ticks: { color: textColor } 
+                            }
+                        }
+                    }
+                });
+            },
+
+            renderSettings() {
+                const { profile } = this.state;
+                this.elements.ageInput.value = profile.age || '';
+                this.elements.genderInput.value = profile.gender || 'male';
+                this.elements.heightInput.value = profile.height || '';
+                this.elements.weightInput.value = profile.weight || '';
+                this.elements.targetWeightInput.value = profile.targetWeight || '';
+                this.elements.activityLevelInput.value = profile.activityLevel || '1.55';
+                this.elements.apiKeyInput.value = this.state.apiKey || '';
+            },
+
+            renderTheme() {
+                const isDark = this.state.theme === 'dark';
+                this.elements.root.className = isDark ? 'dark' : 'light';
+                this.elements.themeToggleBtn.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}" style="width:16px; height:16px;"></i><span>Passer en ${isDark ? 'Clair' : 'Sombre'}</span>`;
+                lucide.createIcons();
+                
+                if (this.state.activeScreen === 'progress') {
+                    setTimeout(() => this.renderProgress(), 50);
+                }
+            },
+
+            showCoachModal(visible) { this.elements.coachModal.classList.toggle('visible', visible); },
+            showApiKeyModal(visible) { this.elements.apiKeyModal.classList.toggle('visible', visible); },
+            showLoading(visible, message = '') {
+                this.elements.loadingMessage.textContent = message;
+                this.elements.loadingOverlay.classList.toggle('visible', visible);
+            },
+            showError(message) {
+                if (message) {
+                    this.elements.errorMessage.textContent = message;
+                    this.elements.errorBanner.classList.add('visible');
+                    clearTimeout(this.errorTimeout);
+                    this.errorTimeout = setTimeout(() => this.showError(null), 5000);
+                } else {
+                    this.elements.errorBanner.classList.remove('visible');
+                }
+            },
+        };
+
+        app.init();
+    });
+    </script>
+</body>
+</html>

@@ -11,13 +11,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
+        /* --- Variables et thème --- */
         :root {
             --font-sans: 'Inter', sans-serif;
-            --color-primary: #22c55e; /* Green */
+            --color-primary: #22c55e;
             --color-primary-translucent: rgba(34, 197, 94, 0.1);
-            --color-secondary: #3b82f6; /* Blue */
+            --color-secondary: #3b82f6;
             --color-secondary-translucent: rgba(59, 130, 246, 0.1);
-            --color-accent: #f59e0b; /* Amber */
+            --color-accent: #f59e0b;
             --background-dark: #0c0a09;
             --background-glass-dark: rgba(28, 25, 23, 0.25);
             --text-primary-dark: #f5f5f4;
@@ -54,6 +55,7 @@
             --color-border-subtle: var(--border-subtle-light);
         }
 
+        /* --- Global & Base Styling --- */
         *, *::before, *::after { box-sizing: border-box; }
 
         body {
@@ -61,25 +63,69 @@
             font-family: var(--font-sans);
             margin: 0;
             overscroll-behavior: none;
+            transition: background-color 0.5s ease;
+        }
+
+        /* Utilisation de `flex` pour un ajustement mobile plus robuste */
+        .app-container {
+            max-width: 480px;
+            margin: auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            color: var(--color-text-primary);
         }
         
-        .app-container { max-width: 480px; margin: auto; height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; color: var(--color-text-primary); }
-        .glass-bg-container { position: absolute; inset: 0; background-image: radial-gradient(circle at 10% 20%, var(--color-primary-translucent), transparent 50%), radial-gradient(circle at 80% 90%, var(--color-secondary-translucent), transparent 50%); z-index: -1; transition: opacity 0.5s ease; }
-        .main-content { flex-grow: 1; overflow-y: auto; padding: 1.5rem 1rem 7rem 1rem; }
+        /* Animation de fond liquide avec gyroscope */
+        .glass-bg-container {
+            position: absolute;
+            inset: -10%; /* L'agrandir pour éviter de couper les bords lors de la rotation */
+            background-image: radial-gradient(circle at 10% 20%, var(--color-primary-translucent), transparent 50%),
+                              radial-gradient(circle at 80% 90%, var(--color-secondary-translucent), transparent 50%);
+            z-index: -1;
+            transition: background-image 0.5s ease, opacity 0.5s ease;
+            transform: translate(var(--bg-x, 0), var(--bg-y, 0)); /* Utilisé par JS pour le gyroscope */
+            filter: hue-rotate(var(--hue-rotate, 0deg)); /* Effet de réflexion/reflet */
+        }
+
+        /* Assurer un défilement fluide et masquer la barre de défilement */
+        .main-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1.5rem 1rem 7rem 1rem;
+            -webkit-overflow-scrolling: touch;
+        }
         .main-content::-webkit-scrollbar { width: 0; background: transparent; }
 
-        .screen { display: none; animation: fadeIn 0.5s ease; }
+        /* Animations de transition d'écran */
+        .screen { display: none; animation: slideIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
         .screen.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; filter: blur(4px); } to { opacity: 1; filter: blur(0px); } }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
 
         .screen-title { font-size: 2.25rem; font-weight: 800; margin-bottom: 1.5rem; color: var(--color-text-primary); }
         .section-title { font-weight: 600; margin-bottom: 0.75rem; color: var(--color-text-secondary); }
 
-        .glass-card { background-color: var(--color-background-glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--color-border); border-radius: 1.25rem; transition: background-color 0.3s, border 0.3s; padding: 1rem; }
+        /* Ombre et transition pour les cartes de verre */
+        .glass-card { 
+            background-color: var(--color-background-glass); 
+            backdrop-filter: blur(24px); 
+            -webkit-backdrop-filter: blur(24px); 
+            border: 1px solid var(--color-border); 
+            border-radius: 1.25rem; 
+            transition: background-color 0.3s, border 0.3s, box-shadow 0.3s ease; 
+            padding: 1rem; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .glass-card:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); }
         .input, .select { background-color: var(--color-background-glass); border: 1px solid var(--color-border); border-radius: 1rem; padding: 0.85rem 1rem; width: 100%; color: var(--color-text-primary); transition: all 0.2s ease; font-size: 1rem; font-family: var(--font-sans); }
         .input:focus, .select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-translucent); }
         .select { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a8a29e' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
-        .btn { padding: 0.75rem 1.25rem; border-radius: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s ease; border: none; font-family: var(--font-sans); }
+        .btn { padding: 0.75rem 1.25rem; border-radius: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); border: none; font-family: var(--font-sans); }
         .btn:active { transform: scale(0.95); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-primary { background-color: var(--color-primary); color: white; }
@@ -127,6 +173,7 @@
         .tag-green { background-color: var(--color-primary-translucent); color: var(--color-primary); }
         .tag-blue { background-color: var(--color-secondary-translucent); color: var(--color-secondary); }
         .program-description { color: var(--color-text-secondary); font-size: 0.9rem; }
+        .ai-generator-section { display: flex; flex-direction: column; gap: 1rem; }
 
         /* --- Progress Screen --- */
         .chart-container { height: 16rem; margin-top: 1rem; }
@@ -138,11 +185,52 @@
         .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
         
         /* --- Bottom Nav --- */
-        .bottom-nav { position: absolute; left: 1rem; right: 1rem; bottom: 1rem; height: 4.5rem; padding: .75rem; background-color: var(--color-background-glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--color-border); display: flex; border-radius: 1.25rem; justify-content: space-around; z-index: 10; }
-        .nav-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; color: var(--color-text-tertiary); background: none; border: none; cursor: pointer; padding: 0.5rem; border-radius: 0.5rem; transition: all 0.2s ease; width: 70px; flex-grow: 1; }
-        .nav-item.active { color: var(--color-primary); }
+        .bottom-nav { 
+            position: absolute; 
+            left: 1rem; 
+            right: 1rem; 
+            bottom: 1rem; 
+            height: 4.5rem; 
+            padding: .75rem; 
+            background-color: var(--color-background-glass); 
+            backdrop-filter: blur(24px); 
+            -webkit-backdrop-filter: blur(24px); 
+            border: 1px solid var(--color-border); 
+            display: flex; 
+            border-radius: 1.25rem; 
+            justify-content: space-around; 
+            z-index: 10; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+            transition: box-shadow 0.3s ease;
+        }
+        .nav-item { 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 0.25rem; 
+            color: var(--color-text-tertiary); 
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            padding: 0.5rem; 
+            border-radius: 0.5rem; 
+            transition: all 0.2s ease; 
+            width: 70px; 
+            flex-grow: 1; 
+        }
+        .nav-item:hover, .nav-item.active { color: var(--color-primary); }
         .nav-label { font-size: 0.75rem; font-weight: 600; }
-        .active-indicator { position: absolute; bottom: -10px; height: 4px; width: 24px; background-color: var(--color-primary); border-radius: 2px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .active-indicator { 
+            position: absolute; 
+            bottom: -10px; 
+            height: 4px; 
+            width: 24px; 
+            background-color: var(--color-primary); 
+            border-radius: 2px; 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
 
         /* --- Modals & Overlays --- */
         .modal-backdrop, .loading-overlay, .error-banner-container { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(10px); opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
@@ -169,6 +257,7 @@
 <body>
 
     <div id="app" class="app-container">
+        <!-- Conteneur pour l'effet de fond animé -->
         <div class="glass-bg-container"></div>
         <main class="main-content">
             <!-- Accueil Screen -->
@@ -258,6 +347,21 @@
             <!-- Entraînement Screen -->
             <div id="screen-entrainement" class="screen">
                 <h1 class="screen-title">Entraînement</h1>
+                <!-- NOUVEAU: Section pour la génération de programme par IA -->
+                <div id="ai-workout-section" class="glass-card" style="margin-bottom: 1.5rem; padding: 1.5rem; display:flex; flex-direction:column; gap:1rem;">
+                    <h2 class="section-title" style="margin-bottom: 0;">Générer un programme AI</h2>
+                    <select id="workout-objective-input" class="select">
+                        <option value="gain-muscle">Prise de masse musculaire</option>
+                        <option value="lose-weight">Perte de poids</option>
+                        <option value="improve-cardio">Améliorer le cardio</option>
+                    </select>
+                    <button id="open-workout-camera-btn" class="btn btn-primary" style="width: 100%;"><i data-lucide="camera"></i> Scanner mon équipement</button>
+                    <label for="workout-image-input" class="btn btn-secondary" style="width: 100%;"><i data-lucide="upload-cloud"></i> Importer une photo de mon équipement</label>
+                    <input type="file" id="workout-image-input" accept="image/*" style="display: none;">
+                    <img id="workout-image-preview" src="" style="display: none; max-width: 100%; max-height: 200px; border-radius: 1rem;">
+                    <button id="generate-workout-btn" class="btn btn-secondary" style="width: 100%;" disabled><i data-lucide="zap"></i> Générer mon programme</button>
+                </div>
+
                 <div id="active-program-display" class="glass-card" style="margin-bottom: 1.5rem; display:none;">
                     <!-- JS will populate this -->
                 </div>
@@ -351,10 +455,10 @@
                 cameraStream: null,
             },
             
-            // FIX: Chart instances are moved out of the state object to prevent circular reference errors when saving state.
+            // Les instances de Chart.js ne sont pas stockées dans le state pour éviter les erreurs de sérialisation.
             charts: {},
 
-            // --- NOUVEAU: Base de données des programmes d'entraînement ---
+            // Base de données des programmes d'entraînement prédéfinis
             workoutPrograms: [
                 {
                     id: 'pm-debutant',
@@ -386,6 +490,7 @@
                 screens: document.querySelectorAll('.screen'),
                 navItems: document.querySelectorAll('.nav-item'),
                 activeNavIndicator: document.querySelector('.active-indicator'),
+                bgContainer: document.querySelector('.glass-bg-container'),
                 
                 // Accueil
                 dashboardGreeting: document.getElementById('dashboard-greeting'),
@@ -413,6 +518,11 @@
                 // Entraînement
                 workoutProgramList: document.getElementById('workout-program-list'),
                 activeProgramDisplay: document.getElementById('active-program-display'),
+                openWorkoutCameraBtn: document.getElementById('open-workout-camera-btn'),
+                workoutImageInput: document.getElementById('workout-image-input'),
+                workoutImagePreview: document.getElementById('workout-image-preview'),
+                generateWorkoutBtn: document.getElementById('generate-workout-btn'),
+                workoutObjectiveInput: document.getElementById('workout-objective-input'),
 
                 // Progrès
                 weightChartCanvas: document.getElementById('weight-chart'),
@@ -460,6 +570,9 @@
                 if (!this.state.apiKey) {
                     this.showApiKeyModal(true);
                 }
+
+                // Initialiser l'écouteur du gyroscope
+                this.initGyroscope();
             },
             
             setState(newState) {
@@ -482,11 +595,15 @@
                 try {
                     const savedState = JSON.parse(localStorage.getItem('vitalis-ai-state'));
                     if (savedState) {
-                        // Merge saved state with default state to prevent errors if new properties are added
                         this.state = { ...this.state, ...savedState };
                     }
                     this.state.apiKey = localStorage.getItem('vitalis-ai-apikey');
                     this.state.theme = localStorage.getItem('vitalis-ai-theme') || 'dark';
+
+                    // Fusionner les programmes d'entraînement prédéfinis avec ceux qui sont sauvegardés
+                    if (this.state.workoutPrograms) {
+                        this.workoutPrograms = [...this.workoutPrograms, ...this.state.workoutPrograms.filter(p => !this.workoutPrograms.some(op => op.id === p.id))];
+                    }
 
                     if (this.state.weightLog.length === 0 && this.state.profile.weight) {
                         this.logWeight(this.state.profile.weight);
@@ -499,8 +616,9 @@
 
             saveState() {
                 try {
-                    // The state object is now safe to stringify because it doesn't contain chart instances.
-                    localStorage.setItem('vitalis-ai-state', JSON.stringify(this.state));
+                    const stateToSave = { ...this.state };
+                    stateToSave.workoutPrograms = this.workoutPrograms.filter(p => p.id.startsWith('ai-gen-') || p.id.startsWith('manual-'));
+                    localStorage.setItem('vitalis-ai-state', JSON.stringify(stateToSave));
                     if (this.state.apiKey) localStorage.setItem('vitalis-ai-apikey', this.state.apiKey);
                     localStorage.setItem('vitalis-ai-theme', this.state.theme);
                 } catch (e) {
@@ -523,10 +641,10 @@
                 elements.modalApiKeyForm.addEventListener('submit', e => { e.preventDefault(); this.handleApiKeySave(elements.modalApiKeyInput.value.trim(), true); });
                 elements.modalApiKeyInput.addEventListener('input', e => { elements.modalApiKeyForm.querySelector('button').disabled = !e.target.value.trim(); });
                 elements.errorCloseBtn.addEventListener('click', () => this.showError(null));
-                elements.openCameraBtn.addEventListener('click', () => this.startCamera());
+                elements.openCameraBtn.addEventListener('click', () => this.startCamera('nutrition'));
                 elements.closeCameraBtn.addEventListener('click', () => this.stopCamera());
                 elements.captureBtn.addEventListener('click', () => this.capturePhoto());
-                elements.mealImageInput.addEventListener('change', e => this.handleImagePreview(e));
+                elements.mealImageInput.addEventListener('change', e => this.handleImagePreview(e, 'nutrition'));
                 elements.analyzeBtn.addEventListener('click', () => this.handleAnalyzeMeal());
                 elements.manualAddForm.addEventListener('submit', e => { e.preventDefault(); this.handleManualAdd(); });
                 elements.dailyCoachBtn.addEventListener('click', () => this.handleDailyCoach());
@@ -541,7 +659,37 @@
                     const card = e.target.closest('.program-card');
                     if (card) this.showWorkoutModal(card.dataset.id);
                 });
+
+                // NOUVEAU: Événements pour la génération de programme AI
+                elements.openWorkoutCameraBtn.addEventListener('click', () => this.startCamera('workout'));
+                elements.workoutImageInput.addEventListener('change', e => this.handleImagePreview(e, 'workout'));
+                elements.generateWorkoutBtn.addEventListener('click', () => this.handleGenerateWorkout());
             },
+            
+            // NOUVEAU: Fonction pour gérer le gyroscope
+            initGyroscope() {
+                if ('DeviceOrientationEvent' in window) {
+                    window.addEventListener('deviceorientation', this.handleDeviceOrientation);
+                }
+            },
+
+            handleDeviceOrientation(event) {
+                const { elements } = app;
+                const tiltX = event.beta; // Inclinasion de l'avant vers l'arrière
+                const tiltY = event.gamma; // Inclinaison de gauche à droite
+                const rotation = event.alpha; // Rotation autour de l'axe Z
+
+                const moveX = -(tiltY / 90) * 10; // Déplacer de +/- 10%
+                const moveY = -(tiltX / 90) * 10;
+                
+                // Pour l'effet de reflet, on utilise la rotation
+                const hue = rotation || 0;
+
+                elements.bgContainer.style.setProperty('--bg-x', `${moveX}%`);
+                elements.bgContainer.style.setProperty('--bg-y', `${moveY}%`);
+                elements.bgContainer.style.setProperty('--hue-rotate', `${hue}deg`);
+            },
+
 
             calculateTDEE() {
                 const { age, gender, height, weight, activityLevel } = this.state.profile;
@@ -572,16 +720,23 @@
                 lucide.createIcons();
                 setTimeout(() => { btn.innerHTML = `<i data-lucide="save"></i> Mettre à jour le profil`; lucide.createIcons(); }, 2000);
             },
-
-            handleImagePreview(event) {
+            
+            // Gérer l'aperçu de l'image pour la nutrition et l'entraînement
+            handleImagePreview(event, type) {
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = e => {
-                    this.elements.mealImagePreview.src = e.target.result;
-                    this.elements.mealImagePreview.style.display = 'block';
-                    this.elements.analyzeBtn.disabled = false;
-                }
+                    if (type === 'nutrition') {
+                        this.elements.mealImagePreview.src = e.target.result;
+                        this.elements.mealImagePreview.style.display = 'block';
+                        this.elements.analyzeBtn.disabled = false;
+                    } else if (type === 'workout') {
+                        this.elements.workoutImagePreview.src = e.target.result;
+                        this.elements.workoutImagePreview.style.display = 'block';
+                        this.elements.generateWorkoutBtn.disabled = false;
+                    }
+                };
                 reader.readAsDataURL(file);
             },
 
@@ -618,6 +773,26 @@
                 this.setState({ nutritionLog: [...this.state.nutritionLog, newMeal] });
             },
 
+            // Gérer la génération de programme AI
+            async handleGenerateWorkout() {
+                if (!this.aiService) return;
+                let base64Data = this.elements.workoutImagePreview.src.split(',')[1];
+                if (!base64Data) { this.showError("Veuillez d'abord sélectionner une image de votre équipement."); return; }
+                const objective = this.elements.workoutObjectiveInput.value;
+                this.showLoading(true, "L'IA génère votre programme d'entraînement...");
+                const workout = await this.aiService.generateWorkout(base64Data, objective);
+                
+                if (workout && workout.id) {
+                    this.workoutPrograms.push(workout);
+                    this.setState({ activeProgramId: workout.id });
+                    this.elements.workoutImagePreview.style.display = 'none';
+                    this.elements.generateWorkoutBtn.disabled = true;
+                    this.elements.workoutImageInput.value = '';
+                } else {
+                    this.showError("L'IA n'a pas pu générer un programme. Assurez-vous que l'image montre de l'équipement de sport.");
+                }
+            },
+
             async handleDailyCoach() {
                 if (!this.aiService) return;
                 const { nutritionLog, workoutLog, profile, hydration, activeProgramId } = this.state;
@@ -640,6 +815,7 @@
                         workout: todaysWorkout ? `${this.workoutPrograms.find(p=>p.id===todaysWorkout.programId).title} - ${todaysWorkout.workoutName}` : "Aucun"
                     }
                 };
+                this.showLoading(true, "Génération du bilan de votre coach AI...");
                 const coachResponse = await this.aiService.getDailyCoach(JSON.stringify(summary));
                 if (coachResponse && coachResponse.title && coachResponse.summary && coachResponse.tip) {
                     this.elements.coachModalContent.innerHTML = `
@@ -665,9 +841,11 @@
                     setTimeout(() => { this.elements.saveKeyBtnText.textContent = `Sauvegarder`; }, 2000);
                 }
             },
-
-            async startCamera() {
+            
+            // Modifier la fonction pour gérer le type de caméra (nutrition ou entraînement)
+            async startCamera(type) {
                 if (this.state.cameraStream) this.state.cameraStream.getTracks().forEach(track => track.stop());
+                this.currentCameraType = type; // Stocker le type
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                     this.state.cameraStream = stream;
@@ -685,7 +863,8 @@
                 this.state.cameraStream = null;
                 this.elements.cameraModal.classList.remove('visible');
             },
-
+            
+            // Modifier la fonction pour gérer la capture selon le type
             capturePhoto() {
                 const { cameraFeed, cameraCanvas } = this.elements;
                 const context = cameraCanvas.getContext('2d');
@@ -693,7 +872,14 @@
                 cameraCanvas.height = cameraFeed.videoHeight;
                 context.drawImage(cameraFeed, 0, 0, cameraCanvas.width, cameraCanvas.height);
                 this.stopCamera();
-                this.handleAnalyzeMeal(cameraCanvas.toDataURL('image/jpeg'));
+                const imageData = cameraCanvas.toDataURL('image/jpeg');
+                if (this.currentCameraType === 'nutrition') {
+                    this.handleAnalyzeMeal(imageData);
+                } else if (this.currentCameraType === 'workout') {
+                    this.elements.workoutImagePreview.src = imageData;
+                    this.elements.workoutImagePreview.style.display = 'block';
+                    this.elements.generateWorkoutBtn.disabled = false;
+                }
             },
 
             aiService: {
@@ -719,6 +905,28 @@
                 },
                 analyzeMealImage: (base64Data) => app.aiService.run(`Vous êtes un expert en nutrition. Analysez la nourriture sur cette image. Fournissez votre meilleure estimation pour le nom du repas, le total des calories, les protéines (en grammes), les glucides (en grammes) et les lipides (en grammes). Répondez UNIQUEMENT avec un objet JSON valide au format : {"name": "string", "calories": number, "protein": number, "carbs": number, "fat": number}.`, true, base64Data),
                 getDailyCoach: (summary) => app.aiService.run(`Vous êtes Vitalis AI, un coach en bien-être encourageant. Matéo, un étudiant de 18 ans, a fourni les données suivantes : ${summary}. Rédigez un bilan de sa journée en français. Soyez positif et constructif. Répondez UNIQUEMENT avec un objet JSON valide au format : {"title": "string", "summary": "string", "tip": "string"}. Le titre est un encouragement (ex: "Belle journée !"), le résumé est un bilan de 1-2 phrases sur sa nutrition et son activité, et le conseil est un conseil actionnable pour demain.`, true),
+                
+                // NOUVEAU: Service de génération de programme d'entraînement par IA
+                generateWorkout: (base64Data, objective) => {
+                    const profile = app.state.profile;
+                    const prompt = `Vous êtes Vitalis AI, un coach sportif expert. Créez un programme d'entraînement pour Matéo, 18 ans, qui pèse ${profile.weight} kg et mesure ${profile.height} cm. Il a ces objectifs : "${objective}". Voici une image de son équipement :
+                    
+                    En fonction de l'équipement visible et de ses objectifs, créez un programme de 3 à 5 jours par semaine. Le programme doit être complet, sûr et efficace.
+
+                    Répondez UNIQUEMENT avec un objet JSON valide au format :
+                    {
+                        "id": "ai-gen-${Date.now()}",
+                        "title": "Nom du programme généré",
+                        "description": "Une courte description du programme.",
+                        "tags": [{"text": "Tag1", "class": "green"}, {"text": "Tag2", "class": "blue"}],
+                        "schedule": {
+                            "1": {"name": "Nom de la séance du lundi", "exercises": ["Exercice1: séries x répétitions", "Exercice2: séries x répétitions"]},
+                            "2": {"name": "Nom de la séance du mardi", "exercises": ["Exercice1: séries x répétitions", "Exercice2: séries x répétitions"]},
+                            ...
+                        }
+                    }`;
+                    return app.aiService.run(prompt, true, base64Data);
+                }
             },
 
             render() {
@@ -736,7 +944,6 @@
                     indicator.style.transform = `translateX(${navItemRect.left - navRect.left + (navItemRect.width / 2) - (indicator.offsetWidth / 2)}px)`;
                 }
                 
-                // Call specific render functions based on active screen
                 const renderFunc = this[`render${state.activeScreen.charAt(0).toUpperCase() + state.activeScreen.slice(1)}`];
                 if (renderFunc) renderFunc.call(this);
 
@@ -760,13 +967,11 @@
                 const progress = profile.tdee > 0 ? Math.min(1, totalCalories / profile.tdee) : 0;
                 this.elements.calorieProgressFg.style.strokeDashoffset = 264 * (1 - progress);
 
-                // Render Hydration
                 this.elements.hydrationTracker.innerHTML = Array.from({ length: hydration.goal }, (_, i) => 
                     `<i data-lucide="glass-water" class="water-glass ${i < hydration.glasses ? 'filled' : ''}" data-index="${i}"></i>`
                 ).join('');
                 this.elements.hydrationLabel.textContent = `${hydration.glasses} / ${hydration.goal} verres`;
 
-                // Render Workout Summary
                 this.renderDailyWorkoutSummary();
             },
 
@@ -799,14 +1004,18 @@
                 
                 if (this.state.activeProgramId) {
                     const program = this.workoutPrograms.find(p => p.id === this.state.activeProgramId);
-                    this.elements.activeProgramDisplay.innerHTML = `
-                        <h2 class="section-title">Programme Actif</h2>
-                        <h3 class="program-title">${program.title}</h3>
-                        <p class="program-description">${program.description}</p>
-                        <button class="btn btn-secondary btn-sm" style="margin-top: 0.5rem;" id="view-active-program">Voir le programme</button>
-                    `;
-                    this.elements.activeProgramDisplay.style.display = 'block';
-                    document.getElementById('view-active-program').onclick = () => this.showWorkoutModal(this.state.activeProgramId);
+                    if (program) {
+                        this.elements.activeProgramDisplay.innerHTML = `
+                            <h2 class="section-title">Programme Actif</h2>
+                            <h3 class="program-title">${program.title}</h3>
+                            <p class="program-description">${program.description}</p>
+                            <button class="btn btn-secondary btn-sm" style="margin-top: 0.5rem;" id="view-active-program">Voir le programme</button>
+                        `;
+                        this.elements.activeProgramDisplay.style.display = 'block';
+                        document.getElementById('view-active-program').onclick = () => this.showWorkoutModal(this.state.activeProgramId);
+                    } else {
+                         this.elements.activeProgramDisplay.style.display = 'none';
+                    }
                 } else {
                     this.elements.activeProgramDisplay.style.display = 'none';
                 }
@@ -818,13 +1027,11 @@
             },
 
             renderWeightChart() {
-                // FIX: Use this.charts instead of this.state.charts
                 if (this.charts.weight) this.charts.weight.destroy();
                 const { weightLog, profile } = this.state;
                 const labels = weightLog.map(entry => new Date(entry.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
                 const data = weightLog.map(entry => entry.weight);
                 const targetWeightData = weightLog.map(() => profile.targetWeight);
-                // FIX: Use this.charts instead of this.state.charts
                 this.charts.weight = new Chart(this.elements.weightChartCanvas, this.getChartConfig(labels, [
                     { label: 'Poids', data, borderColor: 'var(--color-primary)', backgroundColor: 'var(--color-primary-translucent)' },
                     { label: 'Objectif', data: targetWeightData, borderColor: 'var(--color-secondary)', borderDash: [5, 5] }
@@ -832,7 +1039,6 @@
             },
 
             renderActivityChart() {
-                // FIX: Use this.charts instead of this.state.charts
                 if (this.charts.activity) this.charts.activity.destroy();
                 const labels = Array.from({length: 7}, (_, i) => {
                     const d = new Date();
@@ -847,7 +1053,6 @@
                     }).length;
                 });
 
-                // FIX: Use this.charts instead of this.state.charts
                 this.charts.activity = new Chart(this.elements.activityChartCanvas, this.getChartConfig(labels, [
                     { label: 'Séances', data, borderColor: 'var(--color-accent)', backgroundColor: 'rgba(245, 158, 11, 0.1)', type: 'bar' }
                 ], { y: { suggestedMax: 3 } }));
